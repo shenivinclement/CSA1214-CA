@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>8085/8086 Virtual Trainer &amp; Assembler-Simulator</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header>
+  <h1>Web-Based <span class="accent">8085/8086</span> Virtual Trainer &amp; Assembler-Simulator</h1>
+  <span class="sub">Module 1: Assembler &amp; Decoder &middot; Module 2: CPU Execution Engine &middot; Module 3: Web UI &amp; Debugger</span>
+  <div class="spacer"></div>
+  <div class="group">
+    <label for="archSelect">Architecture</label>
+    <select id="archSelect">
+      <option value="8085">Intel 8085</option>
+      <option value="8086">Intel 8086 (subset)</option>
+    </select>
+  </div>
+  <div class="group">
+    <label for="exampleSelect">Example</label>
+    <select id="exampleSelect"></select>
+  </div>
+</header>
+
+<div class="toolbar">
+  <button id="btnAssemble" class="primary">&#9654; Assemble</button>
+  <div class="divider"></div>
+  <button id="btnStepInstr">Step Instruction</button>
+  <button id="btnMicroStep">Micro-Step (FSM)</button>
+  <button id="btnRun" class="primary">Run</button>
+  <button id="btnPause">Pause</button>
+  <button id="btnReset">Reset</button>
+  <div class="divider"></div>
+  <div class="group">
+    <label for="speedSlider">Speed</label>
+    <input type="range" id="speedSlider" min="1" max="200" value="20">
+  </div>
+  <div class="divider"></div>
+  <span id="statusLine" class="fsm-status" style="padding:0;">Idle</span>
+</div>
+
+<main>
+  <div class="left-col">
+    <div class="panel" style="flex: 1 1 55%;">
+      <div class="panel-title">
+        <span>Code Editor</span>
+        <span id="archBadge" style="color: var(--amber);">8085</span>
+      </div>
+      <div class="editor-wrap">
+        <div class="gutter" id="gutter"></div>
+        <div class="editor-stack">
+          <div id="lineHighlight" class="highlight-line" style="display:none;"></div>
+          <pre id="highlightLayer"></pre>
+          <textarea id="codeEditor" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" style="flex: 1 1 45%;">
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="tab-listing">Machine Code</button>
+        <button class="tab-btn" data-tab="tab-errors">Errors <span id="errCount"></span></button>
+        <button class="tab-btn" data-tab="tab-help">Help</button>
+      </div>
+      <div id="tab-listing" class="tab-content active">
+        <div class="panel-body"><table class="listing-table" id="listingTable"></table></div>
+      </div>
+      <div id="tab-errors" class="tab-content">
+        <div class="panel-body" id="errorsBody"><span class="help-box">Click "Assemble" to check your program for syntax errors.</span></div>
+      </div>
+      <div id="tab-help" class="tab-content">
+        <div class="panel-body help-box" id="helpBody"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="right-col">
+    <div class="panel">
+      <div class="panel-title"><span>CPU Cycle &mdash; Fetch / Decode / Execute</span></div>
+      <div class="fsm-strip" id="fsmStrip"></div>
+      <div class="fsm-status" id="fsmDetail">No program loaded.</div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title"><span>Registers</span></div>
+      <div class="panel-body"><div class="reg-grid" id="regGrid"></div></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title"><span>Flags</span></div>
+      <div class="panel-body"><div class="flag-row" id="flagRow"></div></div>
+    </div>
+
+    <div class="panel" style="flex: 1 1 auto; min-height: 220px;">
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="tab-memory">Memory</button>
+        <button class="tab-btn" data-tab="tab-trace">Execution Trace</button>
+        <button class="tab-btn" data-tab="tab-io">I/O Console</button>
+      </div>
+      <div id="tab-memory" class="tab-content active">
+        <div class="mem-toolbar">
+          <label for="memAddrInput">Addr</label>
+          <input type="text" id="memAddrInput" value="0000">
+          <button id="memGo">Go</button>
+          <button id="memPrev">&larr; Prev</button>
+          <button id="memNext">Next &rarr;</button>
+        </div>
+        <div class="panel-body"><table class="mem-table" id="memTable"></table></div>
+      </div>
+      <div id="tab-trace" class="tab-content">
+        <div class="panel-body" id="traceBody"></div>
+      </div>
+      <div id="tab-io" class="tab-content">
+        <div class="panel-body">
+          <div class="panel-title" style="padding-left:0;border:none;">OUT / INT console output</div>
+          <div class="console-box" id="consoleBox"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script src="js/common.js"></script>
+<script src="js/cpu8085.js"></script>
+<script src="js/cpu8086.js"></script>
+<script src="js/assembler.js"></script>
+<script src="js/examples.js"></script>
+<script src="js/ui.js"></script>
+</body>
+</html>
