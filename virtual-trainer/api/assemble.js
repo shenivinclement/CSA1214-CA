@@ -7,7 +7,7 @@
 // Runs the exact same core/assembler.js that the browser UI uses.
 'use strict';
 
-import { assembleProgram, validateRequest } from '../core/runner.js';
+import { assembleProgram, validateRequest } from '../public/core/runner.js';
 import { route, send, fail } from './_lib.js';
 
 export default route(['POST'], async (req, res, body) => {

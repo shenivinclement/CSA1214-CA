@@ -45,11 +45,12 @@
   3.  WHAT THE BACKEND IS  (the one-line version for your viva)
 -------------------------------------------------------------------------------
 
-  The assembler and both CPU engines live in  core/  as plain ES modules with
-  no browser code and no server code in them. The SAME files are imported by:
+  The assembler and both CPU engines live in  public/core/  as plain ES modules
+  with no browser code and no server code in them. The SAME files are imported
+  by:
 
-      - js/ui.js        the browser trainer      (interactive stepping)
-      - api/*.js        the serverless functions (batch assemble / run)
+      - public/js/ui.js   the browser trainer      (interactive stepping)
+      - api/*.js          the serverless functions (batch assemble / run)
 
   This is called an ISOMORPHIC CORE. There is one instruction table per
   processor, so the browser and the server can never disagree.
@@ -60,21 +61,27 @@
 
   Folder map
   ----------
-      core/common.js      hex helpers, error types
-      core/expr.js        operand expression evaluator ($ , HIGH/LOW, + - * /)
-      core/cpu8085.js     8085 encoder + execution engine
-      core/cpu8086.js     8086 encoder + execution engine
-      core/assembler.js   two-pass assembler driver
-      core/runner.js      headless assemble+execute (used by API and browser)
+      public/                  <- everything Vercel serves to the browser
+        index.html
+        css/style.css
+        js/ui.js               browser UI + API client
+        core/common.js         hex helpers, error types
+        core/expr.js           expression evaluator ($ , HIGH/LOW, + - * /)
+        core/cpu8085.js        8085 encoder + execution engine
+        core/cpu8086.js        8086 encoder + execution engine
+        core/assembler.js      two-pass assembler driver
+        core/runner.js         headless assemble+execute (API and browser)
 
       api/assemble.js     POST /api/assemble
       api/run.js          POST /api/run
       api/health.js       GET  /api/health
       api/_lib.js         shared HTTP helpers (underscore = not a route)
 
-      js/ui.js            browser UI + API client
-      server.mjs          local dev server (static files + /api)
+      server.mjs          local dev server (serves public/ + /api)
       tests/              49 automated tests
+
+  The engine sits inside public/core/ so the browser can import it over HTTP,
+  and the serverless functions import the SAME files via ../public/core/.
 
 
 -------------------------------------------------------------------------------
@@ -169,7 +176,8 @@
 
   5. Press "Run on Server", then open the "Server" tab.
      Say: the same program just ran on the backend AND in the browser,
-     and all N values matched -- because both import the same core/ engine.
+     and all N values matched -- because both import the same
+     public/core/ engine.
 
   6. Show the raw API: paste the /api/health curl command.
 

@@ -12,7 +12,7 @@
 // tail of the execution trace.
 'use strict';
 
-import { runProgram, validateRequest, LIMITS } from '../core/runner.js';
+import { runProgram, validateRequest, LIMITS } from '../public/core/runner.js';
 import { route, send, fail } from './_lib.js';
 
 export default route(['POST'], async (req, res, body) => {

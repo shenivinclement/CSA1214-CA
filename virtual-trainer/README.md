@@ -14,23 +14,28 @@ browser trainer and the server-side API. There is one instruction table per arch
 and it cannot drift between client and server.
 
 ```
-                        ┌───────────────────────────┐
-                        │        core/  (ESM)       │
-                        │  expr.js      assembler.js│
-                        │  cpu8085.js   cpu8086.js  │
-                        │  runner.js    common.js   │
-                        └─────────────┬─────────────┘
-                    imports           │           imports
-          ┌───────────────────────────┴──────────────────────────┐
-          ▼                                                      ▼
- ┌──────────────────┐                                ┌──────────────────────┐
- │  js/ui.js        │   fetch  POST /api/run   ───▶  │  api/run.js          │
- │  (browser)       │ ◀───────  JSON result          │  api/assemble.js     │
- │                  │                                │  api/health.js       │
- │ editor · FSM     │                                │  (Vercel functions)  │
- │ registers · mem  │                                └──────────────────────┘
- └──────────────────┘
+                     ┌──────────────────────────────┐
+                     │   public/core/   (ESM)       │
+                     │   expr.js      assembler.js  │
+                     │   cpu8085.js   cpu8086.js    │
+                     │   runner.js    common.js     │
+                     └──────────────┬───────────────┘
+                 imports            │            imports
+       ┌────────────────────────────┴─────────────────────────┐
+       ▼                                                      ▼
+┌─────────────────────┐                         ┌──────────────────────┐
+│  public/js/ui.js    │  fetch POST /api/run ─▶ │  api/run.js          │
+│  (browser)          │ ◀──────  JSON result    │  api/assemble.js     │
+│                     │                         │  api/health.js       │
+│  editor · FSM       │                         │  (Vercel functions)  │
+│  registers · memory │                         └──────────────────────┘
+└─────────────────────┘
 ```
+
+`public/` is the static output Vercel serves; every file in `api/` becomes a
+serverless function. The engine lives *inside* `public/core/` so the browser can
+import it over HTTP, and the functions import those very same files through
+`../public/core/`.
 
 The **Server** tab runs your program on both engines and diffs every register, flag and
 requested memory range — a live demonstration that the client and server produce
@@ -40,14 +45,14 @@ identical results.
 
 | Path | Role |
 |---|---|
-| `core/common.js` | Hex/bit helpers, `CpuRuntimeError` |
-| `core/expr.js` | Operand expression evaluator (labels, `$`, `HIGH/LOW/OFFSET`, arithmetic) |
-| `core/cpu8085.js` | 8085 encoder + 5-stage execution engine |
-| `core/cpu8086.js` | 8086 encoder + 5-stage execution engine (full ModRM addressing) |
-| `core/assembler.js` | Two-pass driver, directives, branch relaxation |
-| `core/runner.js` | Headless assemble/execute used by the API **and** by the browser diff |
-| `api/*.js` | Serverless HTTP endpoints (thin wrappers over `core/runner.js`) |
-| `js/ui.js` | Browser UI: editor, debugger, panels, API client |
+| `public/core/common.js` | Hex/bit helpers, `CpuRuntimeError` |
+| `public/core/expr.js` | Operand expression evaluator (labels, `$`, `HIGH/LOW/OFFSET`, arithmetic) |
+| `public/core/cpu8085.js` | 8085 encoder + 5-stage execution engine |
+| `public/core/cpu8086.js` | 8086 encoder + 5-stage execution engine (full ModRM addressing) |
+| `public/core/assembler.js` | Two-pass driver, directives, branch relaxation |
+| `public/core/runner.js` | Headless assemble/execute used by the API **and** by the browser diff |
+| `api/*.js` | Serverless HTTP endpoints (thin wrappers over `public/core/runner.js`) |
+| `public/index.html`, `public/css`, `public/js/ui.js` | The frontend Vercel serves (`outputDirectory`) |
 | `server.mjs` | Zero-dependency local dev server (static + `/api`) |
 | `tests/` | `node:test` suites for the engines and the live HTTP API |
 
@@ -102,11 +107,17 @@ Then at [vercel.com/new](https://vercel.com/new): import the repository and depl
 | Framework Preset | `Other` |
 | **Root Directory** | **`virtual-trainer`** — set this if the app lives in a subfolder of the repo (as it does in `CSA1214-CA`); leave blank if the app is at the repo root |
 | Build Command | *(empty)* |
-| Output Directory | *(empty)* |
+| Output Directory | *(empty — `vercel.json` already sets it to `public`)* |
 | Install Command | *(empty)* |
 
-There is no build step. Vercel serves the root directory as static files and turns each
-file in `api/` into a Node serverless function automatically.
+There is no build step. `vercel.json` declares `"outputDirectory": "public"`, so Vercel
+serves `public/` as static files and turns each file in `api/` into a Node serverless
+function.
+
+> **Why `outputDirectory` is declared explicitly.** With a `package.json` present and no
+> frontend framework detected, Vercel will otherwise classify the project as a *Node
+> server app*, hunt for a server entrypoint (`app`/`index`/`server`/`main`) and fail with
+> `No entrypoint found`. Declaring the static output removes that ambiguity.
 
 Setting **Root Directory** also acts as a hard boundary: Vercel never sees anything
 outside that folder, so unrelated files elsewhere in the repository cannot be deployed.

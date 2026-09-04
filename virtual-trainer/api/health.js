@@ -5,10 +5,10 @@
 // executing the shared core rather than returning a canned string.
 'use strict';
 
-import { CORE_VERSION } from '../core/index.js';
-import { CPU8085 } from '../core/cpu8085.js';
-import { CPU8086 } from '../core/cpu8086.js';
-import { LIMITS, runProgram } from '../core/runner.js';
+import { CORE_VERSION } from '../public/core/index.js';
+import { CPU8085 } from '../public/core/cpu8085.js';
+import { CPU8086 } from '../public/core/cpu8086.js';
+import { LIMITS, runProgram } from '../public/core/runner.js';
 import { route, send } from './_lib.js';
 
 // A tiny program executed on every health check: 05H + 03H must equal 08H.

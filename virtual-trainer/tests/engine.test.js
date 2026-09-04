@@ -2,7 +2,7 @@
 // resulting machine state.  Run with:  npm test
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { runProgram, EXAMPLES } from '../core/index.js';
+import { runProgram, EXAMPLES } from '../public/core/index.js';
 
 /** Assembles + runs `src`, asserting it reached HLT without a fault. */
 function exec(arch, src, ranges = []) {

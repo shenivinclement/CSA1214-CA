@@ -14,6 +14,7 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
+const PUBLIC = path.join(ROOT, 'public');   // same static root Vercel serves
 const PORT = Number(process.argv[2] || process.env.PORT || 3000);
 
 const MIME = {
@@ -28,8 +29,8 @@ const MIME = {
   '.map': 'application/json; charset=utf-8',
 };
 
-// Only these directories (plus index.html) are reachable, mirroring .vercelignore
-// so the capstone report and slide deck are never served.
+// Everything served lives under public/ - exactly what Vercel deploys as the
+// static output - so nothing outside it can ever be reached.
 const STATIC_DIRS = ['css', 'js', 'core'];
 
 const apiCache = new Map();
@@ -69,15 +70,15 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // ---- Static files -----------------------------------------------------
-  if (pathname === '/' || pathname === '/index.html') return sendFile(res, path.join(ROOT, 'index.html'));
+  // ---- Static files (served from public/, same as the deployment) --------
+  if (pathname === '/' || pathname === '/index.html') return sendFile(res, path.join(PUBLIC, 'index.html'));
 
   const rel = pathname.replace(/^\/+/, '');
   const top = rel.split('/')[0];
   if (!STATIC_DIRS.includes(top)) return notFound(res, pathname);
 
-  const filePath = path.join(ROOT, rel);
-  if (!filePath.startsWith(ROOT + path.sep)) return notFound(res, pathname); // path traversal guard
+  const filePath = path.join(PUBLIC, rel);
+  if (!filePath.startsWith(PUBLIC + path.sep)) return notFound(res, pathname); // path traversal guard
   return sendFile(res, filePath);
 });
 
