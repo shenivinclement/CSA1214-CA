@@ -1,0 +1,24 @@
+{
+  "name": "8085-8086-virtual-trainer",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Web-based Intel 8085/8086 virtual trainer, assembler and CPU simulator with a REST API.",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "dev": "node server.mjs",
+    "start": "node server.mjs",
+    "test": "node --test \"tests/**/*.test.js\""
+  },
+  "keywords": [
+    "8085",
+    "8086",
+    "assembler",
+    "simulator",
+    "microprocessor",
+    "emulator"
+  ],
+  "license": "MIT"
+}

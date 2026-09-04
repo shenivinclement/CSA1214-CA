@@ -1,0 +1,15 @@
+node_modules/
+.vercel
+.env
+.env.local
+*.log
+
+# Coursework documents live in the repository root, not in the app folder.
+*.docx
+*.doc
+*.pptx
+*.ppt
+~$*
+
+.DS_Store
+Thumbs.db

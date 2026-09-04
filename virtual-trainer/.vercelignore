@@ -1,0 +1,20 @@
+# Coursework documents — these must NEVER be uploaded to a public deployment.
+# Anything served by Vercel is downloadable by anyone who guesses the filename.
+*.docx
+*.doc
+*.pptx
+*.ppt
+*.pdf
+~$*
+
+# Local-only
+node_modules
+tests
+.vscode
+.idea
+*.log
+.DS_Store
+Thumbs.db
+
+# Dev-only files (not needed by the deployment)
+server.mjs
