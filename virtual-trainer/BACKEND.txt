@@ -168,7 +168,16 @@
   2. Point at the green "API - online" badge in the toolbar.
      Say: the frontend checked the backend's health on page load.
 
-  3. Pick an example, press "Micro-Step (FSM)" five times.
+  3. Type a short program, e.g.
+
+           ORG 2000H
+           MVI A,05H
+           MVI B,03H
+           ADD B
+           STA 2050H
+           HLT
+
+     Press Assemble, then press "Micro-Step (FSM)" five times.
      Say: Fetch -> Decode -> Operand Fetch -> Execute -> Write-back.
      Registers only change on Write-back.
 

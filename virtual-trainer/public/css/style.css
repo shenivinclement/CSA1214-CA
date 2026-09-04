@@ -337,3 +337,6 @@ table.mem-table td.ascii { color: var(--text-dim); padding-left: 10px; }
 .srv-endpoints .verb { font-weight: 700; }
 .srv-endpoints .verb.post { color: var(--amber); }
 .srv-endpoints .verb.get  { color: var(--blue); }
+
+/* Hint shown in the (transparent) editor when it is empty */
+.tok-placeholder { color: var(--text-dim); font-style: italic; opacity: 0.75; }

@@ -10,7 +10,6 @@
 import { CPU8085 } from '../core/cpu8085.js';
 import { CPU8086 } from '../core/cpu8086.js';
 import { assemble } from '../core/assembler.js';
-import { EXAMPLES } from '../core/examples.js';
 import { runProgram } from '../core/runner.js';
 import { hex2, hex4, escapeHtml } from '../core/common.js';
 
@@ -35,8 +34,25 @@ const state = {
 };
 
 let codeEditor, highlightLayer, gutter, lineHighlight;
-let btnAssemble, btnStepInstr, btnMicroStep, btnRun, btnPause, btnReset, speedSlider, statusLine, archSelect, exampleSelect;
-let btnServerRun, apiBadge;
+let btnAssemble, btnStepInstr, btnMicroStep, btnRun, btnPause, btnReset, speedSlider, statusLine, archSelect;
+let btnServerRun, btnClear, apiBadge;
+
+// Your program is kept per-architecture and saved as you type, so switching
+// between 8085 and 8086 never throws away what you wrote, and a refresh or an
+// accidental tab close does not lose it either.
+const STORE_KEY = arch => `trainer.source.${arch}`;
+const PLACEHOLDER = {
+  '8085': '; Type your 8085 program here, then press Assemble.',
+  '8086': '; Type your 8086 program here, then press Assemble.',
+};
+
+function loadSource(arch) {
+  try { return localStorage.getItem(STORE_KEY(arch)) ?? ''; }
+  catch { return ''; }
+}
+function saveSource(arch, text) {
+  try { localStorage.setItem(STORE_KEY(arch), text); } catch { /* private mode - not fatal */ }
+}
 
 const LINE_H = 20;
 
@@ -56,9 +72,13 @@ document.addEventListener('DOMContentLoaded', () => {
   speedSlider = document.getElementById('speedSlider');
   statusLine = document.getElementById('statusLine');
   archSelect = document.getElementById('archSelect');
-  exampleSelect = document.getElementById('exampleSelect');
+  btnClear = document.getElementById('btnClear');
 
-  codeEditor.addEventListener('input', () => { renderHighlight(); renderGutter(); });
+  codeEditor.addEventListener('input', () => {
+    saveSource(state.arch, codeEditor.value);
+    renderHighlight();
+    renderGutter();
+  });
   codeEditor.addEventListener('scroll', () => {
     highlightLayer.scrollTop = codeEditor.scrollTop;
     highlightLayer.scrollLeft = codeEditor.scrollLeft;
@@ -75,8 +95,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  archSelect.addEventListener('change', () => { state.arch = archSelect.value; onArchChange(); });
-  exampleSelect.addEventListener('change', () => { loadExample(Number(exampleSelect.value)); assembleProgram(); });
+  archSelect.addEventListener('change', () => {
+    saveSource(state.arch, codeEditor.value);   // keep the program you were writing
+    state.arch = archSelect.value;
+    onArchChange();
+  });
+  btnClear.addEventListener('click', clearEditor);
 
   btnAssemble.addEventListener('click', assembleProgram);
   btnStepInstr.addEventListener('click', doStepInstruction);
@@ -117,7 +141,7 @@ function switchTab(tabId) {
   if (btn) btn.click();
 }
 
-// ---------------- Architecture / examples ----------------
+// ---------------- Architecture ----------------
 
 function onArchChange() {
   stopRun();
@@ -127,21 +151,23 @@ function onArchChange() {
   state.asmResult = null;
   state.breakpoints = new Set();
   state.memBase = 0;
-  populateExamples();
-  loadExample(0);
+  // Each architecture keeps its own program; nothing you typed is discarded.
+  codeEditor.value = loadSource(state.arch);
+  renderHighlight();
+  renderGutter();
   renderHelp();
   assembleProgram();
 }
 
-function populateExamples() {
-  exampleSelect.innerHTML = EXAMPLES[state.arch].map((ex, i) => `<option value="${i}">${escapeHtml(ex.name)}</option>`).join('');
-}
-
-function loadExample(idx) {
-  const ex = EXAMPLES[state.arch][idx];
-  codeEditor.value = ex.code;
+function clearEditor() {
+  stopRun();
+  codeEditor.value = '';
+  saveSource(state.arch, '');
+  state.breakpoints = new Set();
   renderHighlight();
   renderGutter();
+  assembleProgram();
+  codeEditor.focus();
 }
 
 // ---------------- Editor: syntax highlight, gutter, breakpoints ----------------
@@ -179,6 +205,12 @@ function highlightLine(line, mod) {
 }
 
 function renderHighlight() {
+  if (codeEditor.value === '') {
+    // The textarea's own text is transparent, so the hint is drawn in the
+    // highlight layer underneath it. It disappears the moment you type.
+    highlightLayer.innerHTML = `<span class="tok-placeholder">${escapeHtml(PLACEHOLDER[state.arch])}</span>`;
+    return;
+  }
   const lines = codeEditor.value.split('\n');
   highlightLayer.innerHTML = lines.map(l => highlightLine(l, state.mod)).join('\n');
 }
@@ -235,7 +267,15 @@ function assembleProgram() {
   renderErrors(result);
   markErrorLinesInGutter(result);
 
-  if (result.success) {
+  if (result.success && countBytes(result) === 0) {
+    // Nothing was emitted (blank editor, or only comments/directives). Don't
+    // hand back a CPU that would just run NOPs through empty memory.
+    state.cpu = null;
+    state.pristineMemory = null;
+    setStatus(codeEditor.value.trim() === ''
+      ? 'Type a program in the editor, then press Assemble.'
+      : 'Nothing to assemble - no instructions found.', 'info');
+  } else if (result.success) {
     state.pristineMemory = result.memory.slice();
     state.cpu = state.mod.createCPU(result.memory);
     if (state.arch === '8086') state.cpu.regs.IP = result.startAddress; else state.cpu.regs.PC = result.startAddress;
@@ -296,7 +336,7 @@ function doMicroStep() {
 }
 
 function doReset() {
-  if (!state.asmResult || !state.asmResult.success) return;
+  if (!state.asmResult || !state.asmResult.success || !state.cpu || !state.pristineMemory) return;
   stopRun();
   state.cpu.memory.set(state.pristineMemory);
   const mem = state.cpu.memory;
@@ -381,7 +421,7 @@ function updateRunButtons() {
   btnMicroStep.disabled = !hasCpu || halted || state.running;
   btnRun.disabled = !hasCpu || halted || state.running;
   btnPause.disabled = !state.running;
-  btnReset.disabled = !state.asmResult || !state.asmResult.success || state.running;
+  btnReset.disabled = !hasCpu || !state.asmResult || !state.asmResult.success || state.running;
 }
 
 function setStatus(text, kind) {
@@ -769,4 +809,4 @@ function renderServerPanel() {
 }
 
 // Debug/demo handle: lets you drive the trainer from the browser console.
-window.trainer = { state, runOnServer, checkApiHealth, assemble, runProgram, CPU8085, CPU8086, EXAMPLES };
+window.trainer = { state, runOnServer, checkApiHealth, assemble, runProgram, CPU8085, CPU8086 };
